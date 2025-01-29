@@ -1,0 +1,34 @@
+{
+    "name": "dynatable",
+    "version": "1.0.0",
+    "private": "true",
+    "type": "module",
+    "description": "Dynamic datatable",
+    "main": "index.js",
+    "scripts": {
+        "bundle": "browserify src/index.js -p esmify > dist/index.js"
+    },
+    "keywords": [
+        "datatable"
+    ],
+    "author": "blackkat98",
+    "license": "ISC",
+    "imports": {
+        "@/*": "./src/*"
+    },
+    "dependencies": {
+        "bootstrap": "^5.3.3",
+        "dottie": "^2.0.6",
+        "jquery": "^3.7.1",
+        "lodash": "^4.17.21",
+        "module-alias": "^2.2.3",
+        "path": "^0.12.7",
+        "uid": "^2.0.2"
+    },
+    "devDependencies": {
+        "browserify": "^17.0.1",
+        "css-loader": "^7.1.2",
+        "esmify": "^2.1.1",
+        "style-loader": "^4.0.0"
+    }
+}
