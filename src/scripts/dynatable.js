@@ -17,7 +17,7 @@ export class DynaTable
     draw() {
         const htmlHeader = this.buildHtmlHeader()
         const html = `
-            <table id="table-${this.tableId}" style="width: 100%;">
+            <table id="table-${this.tableId}" style="width: 100%; border: 1;">
                 <thead id="thead-${this.tableId}">${htmlHeader}</thead>
                 <tbody id="tbody-${this.tableId}"></tbody>
                 <tfoot id="tfoot-${this.tableId}"></tfoot>
@@ -25,7 +25,7 @@ export class DynaTable
         `
         const container = $(this.containerId.startsWith('#') ? this.containerId : `#${this.containerId}`)
         container.html(html)
-        const table = $(`#${this.tableId}`)
+        // const table = $(`#${this.tableId}`)
     }
 
     buildHtmlHeader() {
@@ -65,8 +65,8 @@ export class DynaTable
 
                     if (columns[i].children[j].depth > this.headerDepth) this.headerDepth = columns[i].children[j].depth
 
-                    if (typeof columns[i].children[j].label === 'function' && Array.isArray(columns[i].children[j].labelDatasource)) {
-                        const newChildren = columns[i].children[j].label(columns[i].children[j].labelDatasource).map(el => ({
+                    if (typeof columns[i].children[j].label === 'function' && Array.isArray(columns[i].children[j].iterateFrom)) {
+                        const newChildren = columns[i].children[j].label(columns[i].children[j].iterateFrom).map(el => ({
                             ...columns[i].children[j],
                             label: el,
                         }))
@@ -82,15 +82,9 @@ export class DynaTable
 
     buildColumnHeaderArray(columns) {
         for (let i = 0; i < columns.length; i++) {
-            const colSpan = columns[i].colSpan
             const rowIndex = columns[i].depth - 1
             const rowSpan = columns[i].children && columns[i].children.length ? 1 : (this.headerDepth - columns[i].depth + 1)
-
-            for (let j = rowIndex; j < rowIndex + rowSpan; j++) {
-                this.headerArray[j].push(j === rowIndex ? _.cloneDeep({ ...columns[i], rowSpan: rowSpan, children: [] }) : { colSpan: 1, rowSpan: 1 })
-            }
-
-            if (colSpan > 1) this.headerArray[rowIndex] = this.headerArray[rowIndex].concat(Array.from(Array(colSpan - 1)).map(el => ({ colSpan: 1, rowSpan: 1 })))
+            this.headerArray[rowIndex].push(_.cloneDeep({ ...columns[i], rowSpan: rowSpan, children: [] }))
 
             if (columns[i].children && columns[i].children.length) this.buildColumnHeaderArray(columns[i].children)
         }
