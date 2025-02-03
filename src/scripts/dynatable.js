@@ -8,6 +8,7 @@ export class DynaTable
         this.tableId = uid(10)
         this.headerDepth = 1
         this.headerArray = []
+        this.propList = []
 
         // this.options = options
         this.containerId = options.containerId
@@ -26,6 +27,8 @@ export class DynaTable
         const container = $(this.containerId.startsWith('#') ? this.containerId : `#${this.containerId}`)
         container.html(html)
         // const table = $(`#${this.tableId}`)
+        
+        console.log(this.propList)
     }
 
     buildHtmlHeader() {
@@ -65,10 +68,26 @@ export class DynaTable
 
                     if (columns[i].children[j].depth > this.headerDepth) this.headerDepth = columns[i].children[j].depth
 
-                    if (typeof columns[i].children[j].label === 'function' && Array.isArray(columns[i].children[j].iterateFrom)) {
-                        const newChildren = columns[i].children[j].label(columns[i].children[j].iterateFrom).map(el => ({
+                    if (Array.isArray(columns[i].children[j].iterateFrom) && columns[i].children[j].iterateFrom.length) {
+                        let labels = [], props = []
+
+                        if (typeof columns[i].children[j].label === 'function') {
+                            labels = columns[i].children[j].label(columns[i].children[j].iterateFrom)
+                        } else {
+                            labels = columns[i].children[j].iterateFrom.map(el => '')
+                        }
+
+                        if (typeof columns[i].children[j].prop === 'function') {
+                            props = columns[i].children[j].prop(columns[i].children[j].iterateFrom)
+                        } else {
+                            props = columns[i].children[j].iterateFrom.map(el => '')
+                        }
+
+                        const newChildren = labels.map((label, indice) => ({
                             ...columns[i].children[j],
-                            label: el,
+                            iterateFrom: undefined,
+                            label,
+                            prop: props[indice],
                         }))
                         columns[i].children.splice(j, 1, ...newChildren)
                         columns[i].colSpan += newChildren.length - 1
@@ -86,7 +105,15 @@ export class DynaTable
             const rowSpan = columns[i].children && columns[i].children.length ? 1 : (this.headerDepth - columns[i].depth + 1)
             this.headerArray[rowIndex].push(_.cloneDeep({ ...columns[i], rowSpan: rowSpan, children: [] }))
 
-            if (columns[i].children && columns[i].children.length) this.buildColumnHeaderArray(columns[i].children)
+            if (columns[i].children && columns[i].children.length) {
+                this.buildColumnHeaderArray(columns[i].children)
+            } else {
+                this.propList.push({
+                    type: columns[i].type || '',
+                    prop: columns[i].prop || '',
+                    formatter: columns[i].formatter || '',
+                })
+            }
         }
     }
 }
