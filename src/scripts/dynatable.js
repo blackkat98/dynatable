@@ -1,6 +1,7 @@
 import $ from 'jquery'
 import { uid } from 'uid'
 import _ from 'lodash'
+import dottie  from 'dottie'
 
 export class DynaTable
 {
@@ -9,13 +10,17 @@ export class DynaTable
         this.headerDepth = 1
         this.headerArray = []
         this.propList = []
+        this.data = []
 
         // this.options = options
         this.containerId = options.containerId
         this.columns = options.columns
+        this.datasource = options.datasource
     }
 
-    draw() {
+    async draw() {
+        this.preprocessSettings()
+
         const htmlHeader = this.buildHtmlHeader()
         const html = `
             <table id="table-${this.tableId}" style="width: 100%; border: 1;">
@@ -31,28 +36,10 @@ export class DynaTable
         console.log(this.propList)
     }
 
-    buildHtmlHeader() {
+    preprocessSettings() {
         this.expandColumnHeaderSettings(this.columns)
         this.headerArray = Array.from(Array(this.headerDepth)).map(el => [])
         this.buildColumnHeaderArray(this.columns)
-        const htmlRows = this.headerArray.map(row => {
-            const htmlCells = row.map(cell => {
-                const closingTag = '</th>'
-                let openingTag = '<th'
-
-                if (cell.colSpan > 1) openingTag += ` colspan="${cell.colSpan}"`
-                if (cell.rowSpan > 1) openingTag += ` rowspan="${cell.rowSpan}"`
-
-                openingTag += '>'
-
-                return cell.label ? openingTag + cell.label + closingTag : openingTag + closingTag
-            }).join('')
-
-            return `<tr>${htmlCells}</tr>`
-        })
-        const htmlHeader = htmlRows.join('')
-
-        return htmlHeader
     }
 
     expandColumnHeaderSettings(columns) {
@@ -115,5 +102,41 @@ export class DynaTable
                 })
             }
         }
+    }
+
+    buildHtmlHeader() {
+        const htmlRows = this.headerArray.map(row => {
+            const htmlCells = row.map(cell => {
+                const closingTag = '</th>'
+                let openingTag = '<th'
+
+                if (cell.colSpan > 1) openingTag += ` colspan="${cell.colSpan}"`
+                if (cell.rowSpan > 1) openingTag += ` rowspan="${cell.rowSpan}"`
+
+                openingTag += '>'
+
+                return cell.label ? openingTag + cell.label + closingTag : openingTag + closingTag
+            }).join('')
+
+            return `<tr>${htmlCells}</tr>`
+        })
+        const htmlHeader = htmlRows.join('')
+
+        return htmlHeader
+    }
+
+    async fetchData() {
+        if (!this.datasource) this.data = []
+        if (!this.datasource.remote) this.data = this.datasource.source || []
+
+        this.data = []
+    }
+
+    async buildHtmlBody() {
+        await this.fetchData()
+
+        const dataToShow = this.data.map((item, index) => {
+            
+        })
     }
 }
