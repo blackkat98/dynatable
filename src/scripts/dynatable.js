@@ -22,18 +22,16 @@ export class DynaTable
         this.preprocessSettings()
 
         const htmlHeader = this.buildHtmlHeader()
+        const htmlBody = await this.buildHtmlBody()
         const html = `
             <table id="table-${this.tableId}" style="width: 100%; border: 1;">
                 <thead id="thead-${this.tableId}">${htmlHeader}</thead>
-                <tbody id="tbody-${this.tableId}"></tbody>
+                <tbody id="tbody-${this.tableId}">${htmlBody}</tbody>
                 <tfoot id="tfoot-${this.tableId}"></tfoot>
             </table>
         `
         const container = $(this.containerId.startsWith('#') ? this.containerId : `#${this.containerId}`)
         container.html(html)
-        // const table = $(`#${this.tableId}`)
-        
-        console.log(this.propList)
     }
 
     preprocessSettings() {
@@ -115,7 +113,7 @@ export class DynaTable
 
                 openingTag += '>'
 
-                return cell.label ? openingTag + cell.label + closingTag : openingTag + closingTag
+                return openingTag + (cell.label || '') + closingTag
             }).join('')
 
             return `<tr>${htmlCells}</tr>`
@@ -126,8 +124,8 @@ export class DynaTable
     }
 
     async fetchData() {
-        if (!this.datasource) this.data = []
-        if (!this.datasource.remote) this.data = this.datasource.source || []
+        if (!this.datasource) return this.data = []
+        if (!this.datasource.remote) return this.data = this.datasource.source || []
 
         this.data = []
     }
@@ -136,7 +134,54 @@ export class DynaTable
         await this.fetchData()
 
         const dataToShow = this.data.map((item, index) => {
-            
+            const rowToShow = []
+
+            for (let i = 0; i < this.propList.length; i++) {
+                const propCnf = this.propList[i]
+                const propVal = _.cloneDeep(propCnf)
+                propVal.columnIndex = i
+
+                if (propCnf.type) {
+                    switch (propCnf.type) {
+                        case 'index':
+                            propVal.value = index + 1
+                            break
+
+                        default:
+                            propVal.value = ''
+                    }
+                } else if (propCnf.prop) {
+                    const value = dottie.get(item, propCnf.prop)
+
+                    if (typeof propCnf.formatter === 'function') propVal.value = propCnf.formatter(value)
+                    else propVal.value = value
+                } else {
+                    propVal.value = ''
+                }
+
+                rowToShow.push(propVal)
+            }
+
+            return rowToShow
         })
+        const htmlRows = dataToShow.map(row => {
+            const htmlCells = row.map(cell => {
+                const closingTag = '</td>'
+                let openingTag = '<td'
+
+                if (cell.columnIndex) openingTag += ` data-column-index="${cell.columnIndex}"`
+                if (cell.type) openingTag += ` data-type="${cell.type}"`
+                if (cell.prop) openingTag += ` data-prop="${cell.prop}"`
+
+                openingTag += '>'
+
+                return openingTag + (cell.value || '') + closingTag
+            }).join('')
+
+            return `<tr>${htmlCells}</tr>`
+        })
+        const htmlBody = htmlRows.join('')
+
+        return htmlBody
     }
 }
