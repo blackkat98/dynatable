@@ -6,8 +6,8 @@
     "description": "Dynamic datatable",
     "main": "index.js",
     "scripts": {
-        "bundle-old": "browserify src/index.js -p esmify | uglifyjs > dist/index.js",
-        "bundle": "browserify src/index.js -p esmify | terser --compress --mangle > dist/index.js"
+        "bundle-old": "browserify src/index.js -p esmify | uglifyjs > dist/js/index.js",
+        "bundle": "browserify src/index.js -p esmify | terser --compress --mangle > dist/js/index.js"
     },
     "keywords": [
         "datatable"

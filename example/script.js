@@ -2,14 +2,19 @@ const { DynaTable } = dynatable
 
 const dt1 = new DynaTable({
     containerId: 'table-container-1',
+    tableClass: '',
+    tableStyle: '',
     columns: [
         {
             label: 'No.',
             type: 'index',
+            headerAlign: 'center',
         },
         {
             label: 'Year',
             prop: 'year',
+            headerAlign: 'center',
+            contentAlign: 'center',
         },
         {
             label: 'Sales',
@@ -18,8 +23,10 @@ const dt1 = new DynaTable({
                     label: v => v.map(el => `Quarter ${el}`),
                     prop: v => v.map(el => `sales.q${el}`),
                     iterateFrom: [ 1, 2, 3, 4 ],
+                    headerAlign: 'center',
                 }
             ],
+            headerAlign: 'center',
         }
     ],
     datasource: {

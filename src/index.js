@@ -1,4 +1,4 @@
-import { DynaTable } from './scripts/dynatable.js'
+import { DynaTable } from './js/dynatable.js'
 
 const _dynatable = { DynaTable }
 

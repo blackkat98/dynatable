@@ -12,32 +12,66 @@ export class DynaTable
         this.propList = []
         this.data = []
 
-        // this.options = options
-        this.containerId = options.containerId
-        this.columns = options.columns
-        this.datasource = options.datasource
+        this.options = options
     }
 
     async draw() {
+        const tableClassAttr = this.buildTableClassAttr()
+        const tableStyleAttr = this.buildTableStyleAttr()
         this.preprocessSettings()
-
         const htmlHeader = this.buildHtmlHeader()
         const htmlBody = await this.buildHtmlBody()
+
         const html = `
-            <table id="table-${this.tableId}" style="width: 100%; border: 1;">
+            <table id="table-${this.tableId}" class="${tableClassAttr}" style="${tableStyleAttr}">
                 <thead id="thead-${this.tableId}">${htmlHeader}</thead>
                 <tbody id="tbody-${this.tableId}">${htmlBody}</tbody>
                 <tfoot id="tfoot-${this.tableId}"></tfoot>
             </table>
         `
-        const container = $(this.containerId.startsWith('#') ? this.containerId : `#${this.containerId}`)
+        const container = $(this.options.containerId.startsWith('#') ? this.options.containerId : `#${this.options.containerId}`)
         container.html(html)
     }
 
+    buildTableClassAttr() {
+        if (!this.options.tableClass || !Object.keys(this.options.tableClass).length) return 'table table-bordered'
+
+        if (typeof this.options.tableClass === 'string') return this.options.tableClass
+        else return Object.values(this.options.tableClass).join(' ')
+    }
+
+    buildTableStyleAttr() {
+        let styleArr = []
+
+        if (this.options.tableStyle && Object.keys(this.options.tableStyle).length) {
+            if (typeof this.options.tableStyle === 'string') {
+                styleArr = styleArr.concat(
+                    this.options.tableStyle.split(';')
+                        .map(el => el.trim())
+                        .filter(el => el)
+                        .map(el => {
+                            const parts = el.split(':').map(el => el.trim())
+
+                            return parts.length === 2 && parts[0] && parts[1] ? `${parts[0]}: ${parts[1]}` : ''
+                        })
+                        .filter(el => el)
+                )
+            } else {
+                styleArr = styleArr.concat(Object.keys(this.options.tableStyle).map(propName => `${propName}: ${this.options.tableStyle[propName]}`).join('; '))
+            }
+        }
+
+        if (!styleArr.some(el => el.startsWith('width:'))) styleArr.push('width: 100%')
+
+        styleArr.push('')
+
+        return styleArr.join('; ')
+    }
+
     preprocessSettings() {
-        this.expandColumnHeaderSettings(this.columns)
+        this.expandColumnHeaderSettings(this.options.columns)
         this.headerArray = Array.from(Array(this.headerDepth)).map(el => [])
-        this.buildColumnHeaderArray(this.columns)
+        this.buildColumnHeaderArray(this.options.columns)
     }
 
     expandColumnHeaderSettings(columns) {
@@ -93,11 +127,7 @@ export class DynaTable
             if (columns[i].children && columns[i].children.length) {
                 this.buildColumnHeaderArray(columns[i].children)
             } else {
-                this.propList.push({
-                    type: columns[i].type || '',
-                    prop: columns[i].prop || '',
-                    formatter: columns[i].formatter || '',
-                })
+                this.propList.push(columns[i])
             }
         }
     }
@@ -110,6 +140,14 @@ export class DynaTable
 
                 if (cell.colSpan > 1) openingTag += ` colspan="${cell.colSpan}"`
                 if (cell.rowSpan > 1) openingTag += ` rowspan="${cell.rowSpan}"`
+                
+                let styleArr = []
+
+                if (cell.headerAlign && [ 'left', 'center', 'right' ].includes(cell.headerAlign)) styleArr.push(`text-align: ${cell.headerAlign}`)
+
+                styleArr.push('')
+
+                if (styleArr.length > 1) openingTag += ` style="${styleArr.join('; ')}"`
 
                 openingTag += '>'
 
@@ -124,15 +162,14 @@ export class DynaTable
     }
 
     async fetchData() {
-        if (!this.datasource) return this.data = []
-        if (!this.datasource.remote) return this.data = this.datasource.source || []
+        if (!this.options.datasource) return this.data = []
+        if (!this.options.datasource.remote) return this.data = this.options.datasource.source || []
 
         this.data = []
     }
 
     async buildHtmlBody() {
         await this.fetchData()
-
         const dataToShow = this.data.map((item, index) => {
             const rowToShow = []
 
@@ -172,6 +209,14 @@ export class DynaTable
                 if (cell.columnIndex) openingTag += ` data-column-index="${cell.columnIndex}"`
                 if (cell.type) openingTag += ` data-type="${cell.type}"`
                 if (cell.prop) openingTag += ` data-prop="${cell.prop}"`
+
+                let styleArr = []
+
+                if (cell.contentAlign && [ 'left', 'center', 'right' ].includes(cell.contentAlign)) styleArr.push(`text-align: ${cell.contentAlign}`)
+
+                styleArr.push('')
+
+                if (styleArr.length > 1) openingTag += ` style="${styleArr.join('; ')}"`
 
                 openingTag += '>'
 
