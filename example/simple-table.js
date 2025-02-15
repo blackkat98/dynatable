@@ -1,6 +1,4 @@
-const { DynaTable } = dynatable
-
-const dt1 = new DynaTable({
+const dt1 = new dynatable.DynaTable({
     containerId: 'table-container-1',
     tableClass: '',
     tableStyle: '',

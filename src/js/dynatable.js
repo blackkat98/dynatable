@@ -21,6 +21,7 @@ export class DynaTable
         this.preprocessSettings()
         const htmlHeader = this.buildHtmlHeader()
         const htmlBody = await this.buildHtmlBody()
+        const htmlPagination = this.buildHtmlPagination()
 
         const html = `
             <table id="table-${this.tableId}" class="${tableClassAttr}" style="${tableStyleAttr}">
@@ -28,16 +29,23 @@ export class DynaTable
                 <tbody id="tbody-${this.tableId}">${htmlBody}</tbody>
                 <tfoot id="tfoot-${this.tableId}"></tfoot>
             </table>
+            ${htmlPagination}
         `
         const container = $(this.options.containerId.startsWith('#') ? this.options.containerId : `#${this.options.containerId}`)
         container.html(html)
     }
 
     buildTableClassAttr() {
-        if (!this.options.tableClass || !Object.keys(this.options.tableClass).length) return 'table table-bordered'
+        const fixedClass = 'table table-bordered'
 
-        if (typeof this.options.tableClass === 'string') return this.options.tableClass
-        else return Object.values(this.options.tableClass).join(' ')
+        if (!this.options.tableClass || !Object.keys(this.options.tableClass).length) return fixedClass
+
+        let classes = [ fixedClass ]
+
+        if (typeof this.options.tableClass === 'string') classes = classes.concat(...this.options.tableClass.split(' '))
+        else classes = classes.concat(...Object.values(this.options.tableClass))
+
+        return classes.join(' ')
     }
 
     buildTableStyleAttr() {
@@ -163,9 +171,21 @@ export class DynaTable
 
     async fetchData() {
         if (!this.options.datasource) return this.data = []
-        if (!this.options.datasource.remote) return this.data = this.options.datasource.source || []
 
-        this.data = []
+        if (this.options.datasource.remote) {
+
+        } else {
+            if (this.options.datasource.pagination && this.options.datasource.pagination.show) {
+                this.options.datasource.pagination.page = this.options.datasource.pagination.page || 1
+                this.options.datasource.pagination.perPage = this.options.datasource.pagination.perPage || 10
+                this.options.datasource.pagination.total = this.data.length
+                this.options.datasource.pagination.totalPages = Math.ceil(this.options.datasource.source.length / this.options.datasource.pagination.perPage)
+                const { page, perPage, total, totalPages } = this.options.datasource.pagination
+                this.data = this.options.datasource.source.slice(perPage * (page - 1), perPage * page)
+            } else {
+                this.data = this.options.datasource.source || []
+            }
+        }
     }
 
     async buildHtmlBody() {
@@ -228,5 +248,47 @@ export class DynaTable
         const htmlBody = htmlRows.join('')
 
         return htmlBody
+    }
+
+    buildHtmlPagination() {
+        if (!this.options.datasource.pagination || !this.options.datasource.pagination.show) return ''
+        
+        const { page, perPage, total, totalPages } = this.options.datasource.pagination
+        const pageButtons = Array.from(Array(totalPages)).map((element, index) => {
+            return `
+                <li class="page-item ${index + 1 === page ? 'active' : ''}">
+                    <a 
+                        id="table-${this.tableId}-page-btn-${index + 1}" 
+                        class="page-link page-btn table-${this.tableId}-page-btn" 
+                        href="javascript:void(0)" 
+                        data-page="${index + 1}" 
+                    >
+                        ${index + 1}
+                    </a>
+                </li>
+            `
+        })
+        const pageButtonGroup = `
+            <ul class="pagination">
+                ${pageButtons.join('')}
+            </ul>
+        `
+        $(() => {
+            $('body').on('click', `.page-btn-group a.page-btn.table-${this.tableId}-page-btn`, (event) => {
+                const page = $(event.target).data('page')
+                console.log(page)
+            })
+        })
+
+        return `
+            <div class="dynatable-pagination" style="display: flex; justify-content: space-between; width: 100%;">
+                <div style="width: 40px;">
+
+                </div>
+                <div class="page-btn-group" style="width: calc(100% - 45px);">
+                    ${pageButtonGroup}
+                </div>
+            </div>
+        `
     }
 }
