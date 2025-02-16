@@ -1,5 +1,5 @@
-const dt3 = new dynatable.DynaTable({
-    containerId: 'table-container-3',
+const dt2 = new dynatable.DynaTable({
+    containerId: 'table-container-2',
     tableClass: '',
     tableStyle: '',
     columns: [
@@ -29,23 +29,8 @@ const dt3 = new dynatable.DynaTable({
     ],
     datasource: {
         remote: false,
-        source: Array.from(Array(30)).map((element, index) => ({
-            year: 2000 + index,
-            sales: {
-                q1: 10000000 + (2000 + index) * 100,
-                q2: 12000000 + (2000 + index) * 100,
-                q3: 9000000 + (2000 + index) * 100,
-                q4: 15000000 + (2000 + index) * 100,
-            },
-        })),
-        pagination: {
-            show: true,
-            page: 1,
-            perPage: 10,
-            total: 0,
-            totalPages: 0,
-        },
+        source: [],
     },
 })
 
-dt3.draw()
+dt2.draw()

@@ -7,15 +7,44 @@ export class DynaTable
 {
     constructor(options) {
         this.tableId = uid(10)
+        // this.headerDepth = 1
+        // this.headerArray = []
+        // this.propList = []
+        // this.data = []
+        this.options = options
+        this.resetProps()
+        this.bindEvents()
+    }
+
+    resetProps() {
         this.headerDepth = 1
         this.headerArray = []
         this.propList = []
         this.data = []
+        this.loading = false
+    }
 
-        this.options = options
+    bindEvents() {
+        const pageButtonClass = `.page-btn-group a.page-btn.table-${this.tableId}-page-btn`
+
+        if (this.options.datasource.pagination && this.options.datasource.pagination.show) {
+            $(() => {
+                $('body').on('click', pageButtonClass, (event) => {
+                    const selectedPage = $(event.target).data('page')
+                    const currentPage = this.options.datasource.pagination.page || 1
+                    this.options.datasource.pagination.page = selectedPage
+                    this.draw()
+                    $(pageButtonClass).each(index => {
+                        $($(pageButtonClass)[index]).parent().removeClass('active')
+                    })
+                    $($(pageButtonClass)[selectedPage - 1]).parent().addClass('active')
+                })
+            })
+        }
     }
 
     async draw() {
+        this.resetProps()
         const tableClassAttr = this.buildTableClassAttr()
         const tableStyleAttr = this.buildTableStyleAttr()
         this.preprocessSettings()
@@ -24,7 +53,7 @@ export class DynaTable
         const htmlPagination = this.buildHtmlPagination()
 
         const html = `
-            <table id="table-${this.tableId}" class="${tableClassAttr}" style="${tableStyleAttr}">
+            <table id="table-${this.tableId}" class="table ${tableClassAttr}" style="${tableStyleAttr}">
                 <thead id="thead-${this.tableId}">${htmlHeader}</thead>
                 <tbody id="tbody-${this.tableId}">${htmlBody}</tbody>
                 <tfoot id="tfoot-${this.tableId}"></tfoot>
@@ -36,14 +65,14 @@ export class DynaTable
     }
 
     buildTableClassAttr() {
-        const fixedClass = 'table table-bordered'
+        const fixedClass = 'table-bordered'
 
         if (!this.options.tableClass || !Object.keys(this.options.tableClass).length) return fixedClass
 
-        let classes = [ fixedClass ]
+        let classes = []
 
-        if (typeof this.options.tableClass === 'string') classes = classes.concat(...this.options.tableClass.split(' '))
-        else classes = classes.concat(...Object.values(this.options.tableClass))
+        if (typeof this.options.tableClass === 'string') classes = this.options.tableClass.split(' ')
+        else classes = Object.values(this.options.tableClass)
 
         return classes.join(' ')
     }
@@ -79,12 +108,12 @@ export class DynaTable
     preprocessSettings() {
         this.expandColumnHeaderSettings(this.options.columns)
         this.headerArray = Array.from(Array(this.headerDepth)).map(el => [])
-        this.buildColumnHeaderArray(this.options.columns)
+        this.updateColumnHeaderArray(this.options.columns)
     }
 
     expandColumnHeaderSettings(columns) {
         for (let i = 0; i < columns.length; i++) {
-            columns[i].colSpan = 1
+            columns[i].colSpan = columns[i].colSpan || 1
             columns[i].depth = columns[i].depth || 1
 
             if (columns[i].depth > this.headerDepth) this.headerDepth = columns[i].depth
@@ -126,14 +155,14 @@ export class DynaTable
         }
     }
 
-    buildColumnHeaderArray(columns) {
+    updateColumnHeaderArray(columns) {
         for (let i = 0; i < columns.length; i++) {
             const rowIndex = columns[i].depth - 1
             const rowSpan = columns[i].children && columns[i].children.length ? 1 : (this.headerDepth - columns[i].depth + 1)
             this.headerArray[rowIndex].push(_.cloneDeep({ ...columns[i], rowSpan: rowSpan, children: [] }))
 
             if (columns[i].children && columns[i].children.length) {
-                this.buildColumnHeaderArray(columns[i].children)
+                this.updateColumnHeaderArray(columns[i].children)
             } else {
                 this.propList.push(columns[i])
             }
@@ -153,6 +182,7 @@ export class DynaTable
 
                 if (cell.headerAlign && [ 'left', 'center', 'right' ].includes(cell.headerAlign)) styleArr.push(`text-align: ${cell.headerAlign}`)
 
+                styleArr.push('vertical-align: middle')
                 styleArr.push('')
 
                 if (styleArr.length > 1) openingTag += ` style="${styleArr.join('; ')}"`
@@ -170,26 +200,42 @@ export class DynaTable
     }
 
     async fetchData() {
-        if (!this.options.datasource) return this.data = []
+        if (!this.options.datasource) return
 
         if (this.options.datasource.remote) {
+            if (typeof this.options.datasource.source !== 'function') return
 
+            
         } else {
+            const dataSet = typeof this.options.datasource.source === 'function' ?
+                this.options.datasource.source() : (Array.isArray(this.options.datasource.source) && this.options.datasource.source || [])
+
             if (this.options.datasource.pagination && this.options.datasource.pagination.show) {
                 this.options.datasource.pagination.page = this.options.datasource.pagination.page || 1
                 this.options.datasource.pagination.perPage = this.options.datasource.pagination.perPage || 10
                 this.options.datasource.pagination.total = this.data.length
                 this.options.datasource.pagination.totalPages = Math.ceil(this.options.datasource.source.length / this.options.datasource.pagination.perPage)
                 const { page, perPage, total, totalPages } = this.options.datasource.pagination
-                this.data = this.options.datasource.source.slice(perPage * (page - 1), perPage * page)
+                this.data = dataSet.slice(perPage * (page - 1), perPage * page)
             } else {
-                this.data = this.options.datasource.source || []
+                this.data = dataSet || []
             }
         }
     }
 
     async buildHtmlBody() {
         await this.fetchData()
+
+        if (!this.data.length) {
+            return `
+                <tr>
+                    <td colspan="${this.propList.length}" style="vertical-align: middle; text-align: center; opacity: 0.7;">
+                        No data
+                    </td>
+                </tr>
+            `
+        }
+
         const dataToShow = this.data.map((item, index) => {
             const rowToShow = []
 
@@ -201,7 +247,15 @@ export class DynaTable
                 if (propCnf.type) {
                     switch (propCnf.type) {
                         case 'index':
-                            propVal.value = index + 1
+                            const page = (this.options.datasource && this.options.datasource.pagination && this.options.datasource.pagination.page) || 1
+
+                            if (this.options.datasource.pagination && this.options.datasource.pagination.show) {
+                                const { page, perPage, total, totalPages } = this.options.datasource.pagination
+                                propVal.value = perPage * (page - 1) + index + 1
+                            } else {
+                                propVal.value = index + 1
+                            }
+
                             break
 
                         default:
@@ -234,6 +288,7 @@ export class DynaTable
 
                 if (cell.contentAlign && [ 'left', 'center', 'right' ].includes(cell.contentAlign)) styleArr.push(`text-align: ${cell.contentAlign}`)
 
+                styleArr.push('vertical-align: middle')
                 styleArr.push('')
 
                 if (styleArr.length > 1) openingTag += ` style="${styleArr.join('; ')}"`
@@ -273,19 +328,13 @@ export class DynaTable
                 ${pageButtons.join('')}
             </ul>
         `
-        $(() => {
-            $('body').on('click', `.page-btn-group a.page-btn.table-${this.tableId}-page-btn`, (event) => {
-                const page = $(event.target).data('page')
-                console.log(page)
-            })
-        })
 
         return `
             <div class="dynatable-pagination" style="display: flex; justify-content: space-between; width: 100%;">
-                <div style="width: 40px;">
+                <div style="width: 150px;">
 
                 </div>
-                <div class="page-btn-group" style="width: calc(100% - 45px);">
+                <div class="page-btn-group" style="width: calc(100% - 160px);">
                     ${pageButtonGroup}
                 </div>
             </div>
