@@ -12,6 +12,7 @@ export class DynaTable
         // this.propList = []
         // this.data = []
         this.options = options
+        this.inInitialState = true
         this.resetProps()
         this.bindEvents()
     }
@@ -48,20 +49,27 @@ export class DynaTable
         const tableClassAttr = this.buildTableClassAttr()
         const tableStyleAttr = this.buildTableStyleAttr()
         this.preprocessSettings()
-        const htmlHeader = this.buildHtmlHeader()
+
+        if (this.inInitialState) {
+            const htmlHeader = this.buildHtmlHeader()
+            const emptyHtmlBody = this.buildNoDataHtmlBody()
+            const tableHtml = `
+                <table id="table-${this.tableId}" class="table ${tableClassAttr}" style="${tableStyleAttr}">
+                    <thead id="thead-${this.tableId}">${htmlHeader}</thead>
+                    <tbody id="tbody-${this.tableId}" style="position: relative;">${emptyHtmlBody}</tbody>
+                    <tfoot id="tfoot-${this.tableId}"></tfoot>
+                </table>
+                <div id="pagination-${this.tableId}" style="width: 100%;"><div>
+            `
+            const containerId = this.options.containerId.startsWith('#') ? this.options.containerId : `#${this.options.containerId}`
+            $(containerId).html(tableHtml)
+            this.inInitialState = false
+        }
+
         const htmlBody = await this.buildHtmlBody()
         const htmlPagination = this.buildHtmlPagination()
-
-        const html = `
-            <table id="table-${this.tableId}" class="table ${tableClassAttr}" style="${tableStyleAttr}">
-                <thead id="thead-${this.tableId}">${htmlHeader}</thead>
-                <tbody id="tbody-${this.tableId}">${htmlBody}</tbody>
-                <tfoot id="tfoot-${this.tableId}"></tfoot>
-            </table>
-            ${htmlPagination}
-        `
-        const container = $(this.options.containerId.startsWith('#') ? this.options.containerId : `#${this.options.containerId}`)
-        container.html(html)
+        $(`#tbody-${this.tableId}`).html(htmlBody) // this line makes some borders disappear
+        $(`#pagination-${this.tableId}`).html(htmlPagination)
     }
 
     buildTableClassAttr() {
@@ -199,13 +207,57 @@ export class DynaTable
         return htmlHeader
     }
 
+    buildNoDataHtmlBody() {
+        return `
+            <tr>
+                <td colspan="${this.propList.length}" style="vertical-align: middle; text-align: center; opacity: 0.7;">
+                    No data
+                </td>
+            </tr>
+        `
+    }
+
+    overlayBodyLoading() {
+        const tbodyId = `#tbody-${this.tableId}`
+        const tbodyWidth = $(tbodyId).outerWidth()
+        const tbodyHeight = $(tbodyId).outerHeight()
+        const loadingLayoutStyle = `
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: ${tbodyWidth}px;
+            height: ${tbodyHeight}px;
+            vertical-align: middle;
+            padding-top: ${tbodyHeight - 35}px;
+            background-color: rgba(205, 205, 205, 0.5);
+            pointer-events: auto;
+        `
+        const spinnerBorderStyle = `
+            border-width: 4px;
+            background-color: rgba(205, 205, 205, 0.5);
+            opacity: 0.5;
+        `
+        $(tbodyId).append(`
+            <div id="tbody-loading-${this.tableId}" class="d-flex justify-content-center text-center" style="${loadingLayoutStyle}">
+                <div class="spinner-border spinner-border-lg text-secondary" role="status" style="${spinnerBorderStyle}">
+                    <span class="visually-hidden"></span>
+                </div>
+            </div>
+        `)
+    }
+
     async fetchData() {
         if (!this.options.datasource) return
 
         if (this.options.datasource.remote) {
             if (typeof this.options.datasource.source !== 'function') return
 
-            
+            this.overlayBodyLoading()
+
+            await new Promise((res, rej) => {
+                setTimeout(() => res(''), 150000)
+            })
         } else {
             const dataSet = typeof this.options.datasource.source === 'function' ?
                 this.options.datasource.source() : (Array.isArray(this.options.datasource.source) && this.options.datasource.source || [])
@@ -226,15 +278,7 @@ export class DynaTable
     async buildHtmlBody() {
         await this.fetchData()
 
-        if (!this.data.length) {
-            return `
-                <tr>
-                    <td colspan="${this.propList.length}" style="vertical-align: middle; text-align: center; opacity: 0.7;">
-                        No data
-                    </td>
-                </tr>
-            `
-        }
+        if (!this.data.length) return this.buildNoDataHtmlBody()
 
         const dataToShow = this.data.map((item, index) => {
             const rowToShow = []
