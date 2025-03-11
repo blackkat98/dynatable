@@ -1,0 +1,20 @@
+{
+  "name": "dynatable",
+  "version": "1.0.0",
+  "description": "Dynamic table",
+  "main": "index.js",
+  "scripts": {
+    "build": "vite build"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vitejs/plugin-vue2": "^2.3.3",
+    "bootstrap": "^5.3.3",
+    "bootstrap-vue": "^2.23.1",
+    "dottie": "^2.0.6",
+    "lodash": "^4.17.21",
+    "vite": "^6.2.1",
+    "vue": "^2.7.16"
+  }
+}
