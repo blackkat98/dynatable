@@ -4,7 +4,7 @@ import BootstrapVue from 'bootstrap-vue'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
 
-import Dynatable from './components/Dynatable.vue'
+import DynaTable from './components/DynaTable.vue'
 
 Vue.use(BootstrapVue)
 
@@ -27,7 +27,7 @@ export function dynatable(options) {
         if (!container) return console.error(`Undefined element with ID ${containerId}`)
 
         return new Vue({
-            render: h => h(Dynatable, { props: { columns, dataSource } })
+            render: h => h(DynaTable, { props: { columns, dataSource } })
         }).$mount(`#${containerId}`)
     }
 

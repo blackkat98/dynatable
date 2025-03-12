@@ -1,14 +1,57 @@
 <template>
     <div>
-        {{ columns }}
+        <b-table-simple 
+            responsive 
+            bordered 
+            striped 
+            :class="[ 'table-bordered' ]" 
+        >
+            <b-thead>
+                <b-tr 
+                    v-for="headerLine in headerArray" 
+                    :class="[ 'header-line' ]" 
+                >
+                    <b-th 
+                        v-for="headerCell in headerLine" 
+                        :colspan="headerCell.colSpan || 1" 
+                        :rowspan="headerCell.rowSpan || 1" 
+                    >
+                        {{ headerCell.label }}
+                    </b-th>
+                </b-tr>
+            </b-thead>
+            <b-tbody>
+                <b-tr 
+                    v-for="(dataLine, dataLineIndex) in data" 
+                >
+                    <b-td 
+                        v-for="(prop, propIndex) in propList" 
+                    >
+                        <dyna-body-cell 
+                            :property="prop" 
+                            :rowIndex="dataLineIndex" 
+                            :colIndex="propIndex" 
+                            :pageNumber="pagination.page || 1" 
+                            :pageSize="pagination.perPage || data.length" 
+                            :rowData="dataLine" 
+                        />
+                    </b-td>
+                </b-tr>
+            </b-tbody>
+        </b-table-simple>
     </div>
 </template>
 
 <script>
 import _ from 'lodash'
 
+import DynaBodyCell from './DynaBodyCell.vue'
+
 export default {
-    name: 'Dynatable',
+    name: 'DynaTable',
+    components: {
+        DynaBodyCell,
+    },
     props: {
         columns: {
             type: Array,
@@ -30,12 +73,18 @@ export default {
             headerDepth: 1,
             headerArray: [],
             propList: [],
+            pagination: {
+                show: this.dataSource.pagination && this.dataSource.pagination.show || false,
+                page: this.dataSource.pagination && this.dataSource.pagination.page || 1,
+                perPage: this.dataSource && this.dataSource.perPage || 10,
+                total: 0,
+                totalPages: 0,
+            },
         }
     },
-    mounted() {
+    async mounted() {
         this.preprocessSettings()
-
-        console.log(this.columnSettings)
+        await this.fetchData()
     },
     methods: {
         preprocessSettings() {
@@ -99,10 +148,33 @@ export default {
                 }
             }
         },
+        async fetchData() {
+            if (!this.dataSource) return
+
+            if (this.dataSource.remote) {
+
+            } else {
+                const dataSet = typeof this.dataSource.source === 'function' ? 
+                    this.dataSource.source() : [ ...(Array.isArray(this.dataSource.source) ? this.dataSource.source : []) ]
+
+                if (this.dataSource.pagination && this.dataSource.pagination.show) {
+                    this.dataSource.pagination.page = this.dataSource.pagination.page || 1
+                    this.dataSource.pagination.perPage = this.dataSource.pagination.perPage || 10
+                    this.dataSource.pagination.total = this.data.length
+                    this.dataSource.pagination.totalPages = Math.ceil(this.dataSource.source.length / this.dataSource.pagination.perPage)
+                    const { page, perPage, total, totalPages } = this.dataSource.pagination
+                    this.data = dataSet.slice(perPage * (page - 1), perPage * page)
+                } else {
+                    this.data = dataSet
+                }
+            }
+        },
     },
 }
 </script>
 
 <style>
-
+.header-line {
+    border-top: 1px solid #dee2e6 !important;
+}
 </style>
