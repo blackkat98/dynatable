@@ -14,12 +14,6 @@ export function dynatable(options) {
         columns,
         dataSource,
     } = options
-
-    console.log({
-        containerId,
-        columns,
-        dataSource,
-    })
     
     function mountComponent() {
         const container = document.getElementById(containerId)

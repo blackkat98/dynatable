@@ -15,6 +15,7 @@
                         v-for="headerCell in headerLine" 
                         :colspan="headerCell.colSpan || 1" 
                         :rowspan="headerCell.rowSpan || 1" 
+                        :class="getHeaderCellClass(headerCell)" 
                     >
                         {{ headerCell.label }}
                     </b-th>
@@ -22,10 +23,12 @@
             </b-thead>
             <b-tbody>
                 <b-tr 
+                    v-if="data.length" 
                     v-for="(dataLine, dataLineIndex) in data" 
                 >
                     <b-td 
                         v-for="(prop, propIndex) in propList" 
+                        :class="getBodyCellClass(prop)" 
                     >
                         <dyna-body-cell 
                             :property="prop" 
@@ -37,8 +40,66 @@
                         />
                     </b-td>
                 </b-tr>
+                <b-tr v-if="!data.length">
+                    <b-td 
+                        :colspan="propList.length || 1" 
+                        :class="[ 'text-center' ]" 
+                        :style="{
+                            opacity: 0.3,
+                        }" 
+                    >
+                        {{ dataSource && dataSource.noDataText || 'No data' }}
+                    </b-td>
+                </b-tr>
             </b-tbody>
         </b-table-simple>
+
+        <div 
+            v-if="pagination.show" 
+            class="d-flex justify-content-end gap-4" 
+        >
+            <div 
+                :style="{
+                    width: '150px',
+                    'line-height': '32px',
+                    'text-align': 'right',
+                }" 
+            >
+                Total {{ pagination.total }}
+            </div>
+            <b-form-select 
+                v-model="pagination.perPage" 
+                :options="perPageOptions" 
+                :style="{
+                    height: '32px',
+                }" 
+            />
+            <b-pagination 
+                v-model="pagination.page" 
+                :total-rows="pagination.total" 
+                :per-page="pagination.perPage" 
+                first-number 
+                last-number 
+                size="sm" 
+            />
+            <div class="d-flex justify-content-end">
+                <div 
+                    :style="{
+                        width: '50px',
+                        'line-height': '32px',
+                    }" 
+                >
+                    Go to
+                </div>
+                <b-form-input 
+                    v-model="pagination.page" 
+                    :style="{
+                        width: '100px',
+                        height: '32px',
+                    }" 
+                />
+            </div>
+        </div>
     </div>
 </template>
 
@@ -80,6 +141,7 @@ export default {
                 total: 0,
                 totalPages: 0,
             },
+            perPageOptions: [ 10, 20, 30, 50, 100, 200, 1000 ].map(el => ({ text: el + '/page', value: el })),
         }
     },
     async mounted() {
@@ -158,16 +220,55 @@ export default {
                     this.dataSource.source() : [ ...(Array.isArray(this.dataSource.source) ? this.dataSource.source : []) ]
 
                 if (this.dataSource.pagination && this.dataSource.pagination.show) {
-                    this.dataSource.pagination.page = this.dataSource.pagination.page || 1
-                    this.dataSource.pagination.perPage = this.dataSource.pagination.perPage || 10
-                    this.dataSource.pagination.total = this.data.length
-                    this.dataSource.pagination.totalPages = Math.ceil(this.dataSource.source.length / this.dataSource.pagination.perPage)
-                    const { page, perPage, total, totalPages } = this.dataSource.pagination
-                    this.data = dataSet.slice(perPage * (page - 1), perPage * page)
+                    this.pagination.page = this.dataSource.pagination.page || 1
+                    this.pagination.perPage = this.dataSource.pagination.perPage || 10
+                    this.pagination.total = dataSet.length
+                    this.pagination.totalPages = Math.ceil(this.dataSource.source.length / this.dataSource.pagination.perPage)
+                    this.data = dataSet.slice(this.pagination.perPage * (this.pagination.page - 1), this.pagination.perPage * this.pagination.page)
+
+                    console.log(this.pagination)
                 } else {
                     this.data = dataSet
                 }
             }
+        },
+        getHeaderCellClass(propSettings) {
+            const result = []
+
+            switch (propSettings.headerAlign) {
+                case 'center':
+                    result.push('text-center')
+                    break
+
+                case 'right':
+                    result.push('text-end')
+                    break
+
+                case 'left':
+                    result.push('text-start')
+                    break
+            }
+
+            return result
+        },
+        getBodyCellClass(propSettings) {
+            const result = []
+
+            switch (propSettings.contentAlign) {
+                case 'center':
+                    result.push('text-center')
+                    break
+
+                case 'right':
+                    result.push('text-end')
+                    break
+
+                case 'left':
+                    result.push('text-start')
+                    break
+            }
+
+            return result
         },
     },
 }
