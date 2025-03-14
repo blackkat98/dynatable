@@ -13,6 +13,7 @@
     "bootstrap": "^5.3.3",
     "bootstrap-vue": "^2.23.1",
     "dottie": "^2.0.6",
+    "element-ui": "^2.15.14",
     "lodash": "^4.17.21",
     "vite": "^6.2.1",
     "vue": "^2.7.16"

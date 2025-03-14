@@ -57,55 +57,29 @@
         <div 
             v-if="pagination.show" 
             class="d-flex justify-content-end gap-4" 
+            :style="{
+                height: '40px',
+            }" 
         >
-            <div 
-                :style="{
-                    width: '150px',
-                    'line-height': '32px',
-                    'text-align': 'right',
-                }" 
-            >
-                Total {{ pagination.total }}
-            </div>
-            <b-form-select 
-                v-model="pagination.perPage" 
-                :options="perPageOptions" 
-                :style="{
-                    height: '32px',
-                }" 
+            <el-pagination 
+                v-if="pagination.show" 
+                v-model:current-page="pagination.page" 
+                :total="pagination.total" 
+                :page-size="pagination.perPage" 
+                :page-sizes="[ 10, 20, 30, 50, 100 ]" 
+                layout="total, sizes, slot, prev, pager, next, jumper, ->" 
+                :background="true" 
+                :hide-on-single-page="false" 
+                :disabled="false" 
+                @size-change="onPerPageChange" 
+                @current-change="onPageChange" 
             />
-            <b-pagination 
-                v-model="pagination.page" 
-                :total-rows="pagination.total" 
-                :per-page="pagination.perPage" 
-                first-number 
-                last-number 
-                size="sm" 
-            />
-            <div class="d-flex justify-content-end">
-                <div 
-                    :style="{
-                        width: '50px',
-                        'line-height': '32px',
-                    }" 
-                >
-                    Go to
-                </div>
-                <b-form-input 
-                    v-model="pagination.page" 
-                    :style="{
-                        width: '100px',
-                        height: '32px',
-                    }" 
-                />
-            </div>
         </div>
     </div>
 </template>
 
 <script>
 import _ from 'lodash'
-
 import DynaBodyCell from './DynaBodyCell.vue'
 
 export default {
@@ -141,7 +115,6 @@ export default {
                 total: 0,
                 totalPages: 0,
             },
-            perPageOptions: [ 10, 20, 30, 50, 100, 200, 1000 ].map(el => ({ text: el + '/page', value: el })),
         }
     },
     async mounted() {
@@ -219,14 +192,10 @@ export default {
                 const dataSet = typeof this.dataSource.source === 'function' ? 
                     this.dataSource.source() : [ ...(Array.isArray(this.dataSource.source) ? this.dataSource.source : []) ]
 
-                if (this.dataSource.pagination && this.dataSource.pagination.show) {
-                    this.pagination.page = this.dataSource.pagination.page || 1
-                    this.pagination.perPage = this.dataSource.pagination.perPage || 10
+                if (this.pagination && this.pagination.show) {
                     this.pagination.total = dataSet.length
-                    this.pagination.totalPages = Math.ceil(this.dataSource.source.length / this.dataSource.pagination.perPage)
+                    this.pagination.totalPages = Math.ceil(dataSet.length / this.pagination.perPage)
                     this.data = dataSet.slice(this.pagination.perPage * (this.pagination.page - 1), this.pagination.perPage * this.pagination.page)
-
-                    console.log(this.pagination)
                 } else {
                     this.data = dataSet
                 }
@@ -269,6 +238,14 @@ export default {
             }
 
             return result
+        },
+        async onPageChange(page) {
+            this.pagination.page = page
+            await this.fetchData()
+        },
+        async onPerPageChange(perPage) {
+            this.pagination.perPage = perPage
+            await this.fetchData()
         },
     },
 }
