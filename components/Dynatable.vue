@@ -1,5 +1,13 @@
 <template>
-    <div>
+    <div class="dynatable-container">
+        <div 
+            v-if="loading" 
+            ref="lcover" 
+            class="dynatable-loading" 
+        >
+            <b-spinner></b-spinner>
+        </div>
+        
         <b-table-simple 
             responsive 
             bordered 
@@ -21,7 +29,7 @@
                     </b-th>
                 </b-tr>
             </b-thead>
-            <b-tbody>
+            <b-tbody ref="tbody">
                 <b-tr 
                     v-if="data.length" 
                     v-for="(dataLine, dataLineIndex) in data" 
@@ -52,6 +60,9 @@
                     </b-td>
                 </b-tr>
             </b-tbody>
+            <b-tfoot>
+
+            </b-tfoot>
         </b-table-simple>
 
         <div 
@@ -62,11 +73,10 @@
             }" 
         >
             <el-pagination 
-                v-if="pagination.show" 
                 v-model:current-page="pagination.page" 
                 :total="pagination.total" 
                 :page-size="pagination.perPage" 
-                :page-sizes="[ 10, 20, 30, 50, 100 ]" 
+                :page-sizes="pagination.perPageOptions" 
                 layout="total, sizes, slot, prev, pager, next, jumper, ->" 
                 :background="true" 
                 :hide-on-single-page="false" 
@@ -81,6 +91,7 @@
 <script>
 import _ from 'lodash'
 import DynaBodyCell from './DynaBodyCell.vue'
+import dottie from 'dottie'
 
 export default {
     name: 'DynaTable',
@@ -112,6 +123,8 @@ export default {
                 show: this.dataSource.pagination && this.dataSource.pagination.show || false,
                 page: this.dataSource.pagination && this.dataSource.pagination.page || 1,
                 perPage: this.dataSource && this.dataSource.perPage || 10,
+                perPageOptions: (this.dataSource.pagination && this.dataSource.pagination.perPageOptions && this.dataSource.pagination.perPageOptions.length) ? 
+                    this.dataSource.pagination.perPageOptions : [ 10, 20, 30, 50, 100, 200, 300, 500, 1000 ],
                 total: 0,
                 totalPages: 0,
             },
@@ -187,7 +200,42 @@ export default {
             if (!this.dataSource) return
 
             if (this.dataSource.remote) {
+                if (typeof this.dataSource.source !== 'function') return
 
+                const requestMap = (this.dataSource && this.dataSource.sourceMap && this.dataSource.sourceMap.request) || {}
+                let request = {}
+
+                for (const key of Object.keys(requestMap)) {
+                    if (requestMap[key] === 'page') {
+                        dottie.set(request, key, this.pagination.page)
+                    } else if ([ 'perPage', 'perpage', 'per_page' ].includes(requestMap[key])) {
+                        dottie.set(request, key, this.pagination.perPage)
+                    }
+
+                    // to do: more custom params
+                }
+
+                this.loading = true
+
+                try {
+                    const response = await this.dataSource.source(request)
+                    const responseMap = (this.dataSource && this.dataSource.sourceMap && this.dataSource.sourceMap.response) || {}
+
+                    for (const key of Object.keys(responseMap)) {
+                        if (responseMap[key] === 'data') {
+                            this.data = dottie.get(response, key)
+                        } else if (responseMap[key] === 'total') {
+                            this.pagination.total = dottie.get(response, key)
+                        } else if ([ 'totalPages', 'totalpages', 'total_pages' ].includes(responseMap[key])) {
+                            this.pagination.totalPages = dottie.get(response, key)
+                        }
+                    }
+
+                    this.loading = false
+                } catch (err) {
+                    console.error(err)
+                    this.loading = false
+                }
             } else {
                 const dataSet = typeof this.dataSource.source === 'function' ? 
                     this.dataSource.source() : [ ...(Array.isArray(this.dataSource.source) ? this.dataSource.source : []) ]
@@ -251,8 +299,26 @@ export default {
 }
 </script>
 
-<style>
+<style lang="scss">
 .header-line {
     border-top: 1px solid #dee2e6 !important;
+}
+.dynatable-container {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+
+    .dynatable-loading {
+        position: absolute;
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.8);
+    }
 }
 </style>

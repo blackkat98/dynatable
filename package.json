@@ -9,6 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    
+  },
+  "devDependencies": {
+    "sass": "^1.85.1",
+    "sass-embedded": "^1.85.1",
     "@vitejs/plugin-vue2": "^2.3.3",
     "bootstrap": "^5.3.3",
     "bootstrap-vue": "^2.23.1",
