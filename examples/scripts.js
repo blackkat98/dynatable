@@ -1,4 +1,4 @@
-dynatable({
+const table1 = dynatable({
     containerId: 'table-container-1',
     columns: [
         {
@@ -39,7 +39,7 @@ dynatable({
     },
 })
 
-dynatable({
+const table2 = dynatable({
     containerId: 'table-container-2',
     columns: [
         {
@@ -72,7 +72,7 @@ dynatable({
     },
 })
 
-dynatable({
+const table3 = dynatable({
     containerId: 'table-container-3',
     columns: [
         {
@@ -153,8 +153,10 @@ const mockApi = async (params) => {
         }, 3000)
     })
 }
+const tbl3_Data = table3.getData()
+console.log(tbl3_Data)
 
-dynatable({
+const table4 = dynatable({
     containerId: 'table-container-4',
     columns: [
         {

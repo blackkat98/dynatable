@@ -135,6 +135,7 @@ export default {
         await this.fetchData()
     },
     methods: {
+        // Build and operate a table
         preprocessSettings() {
             this.expandColumnHeaderSettings(this.columnSettings)
             this.headerArray = Array.from(Array(this.headerDepth)).map(el => [])
@@ -294,6 +295,11 @@ export default {
         async onPerPageChange(perPage) {
             this.pagination.perPage = perPage
             await this.fetchData()
+        },
+
+        // Expose table data
+        getData() {
+            return this.data
         },
     },
 }
