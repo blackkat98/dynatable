@@ -25,7 +25,7 @@
                         :rowspan="headerCell.rowSpan || 1" 
                         :class="getHeaderCellClass(headerCell)" 
                     >
-                        {{ headerCell.label }}
+                        <dyna-head-cell :config="headerCell" />
                     </b-th>
                 </b-tr>
             </b-thead>
@@ -90,12 +90,14 @@
 
 <script>
 import _ from 'lodash'
+import DynaHeadCell from './DynaHeadCell.vue'
 import DynaBodyCell from './DynaBodyCell.vue'
 import dottie from 'dottie'
 
 export default {
     name: 'DynaTable',
     components: {
+        DynaHeadCell,
         DynaBodyCell,
     },
     props: {
@@ -111,23 +113,34 @@ export default {
         },
     },
     data() {
+        const columns = _.cloneDeepWith(this.columns, v => v)
+        const dataSource = _.cloneDeepWith(this.dataSource, v => v)
+
+        if (dataSource.select) {
+            columns.unshift({
+                type: 'select',
+            })
+        }
+
         return {
             data: [],
             loading: false,
-            columnSettings: _.cloneDeepWith(this.columns, v => v),
-            dataSourceSettings: _.cloneDeepWith(this.dataSource, v => v),
+            columnSettings: columns,
+            dataSourceSettings: dataSource,
             headerDepth: 1,
             headerArray: [],
             propList: [],
             pagination: {
-                show: this.dataSource.pagination && this.dataSource.pagination.show || false,
-                page: this.dataSource.pagination && this.dataSource.pagination.page || 1,
-                perPage: this.dataSource && this.dataSource.perPage || 10,
-                perPageOptions: (this.dataSource.pagination && this.dataSource.pagination.perPageOptions && this.dataSource.pagination.perPageOptions.length) ? 
-                    this.dataSource.pagination.perPageOptions : [ 10, 20, 30, 50, 100, 200, 300, 500, 1000 ],
+                show: dataSource.pagination && dataSource.pagination.show || false,
+                page: dataSource.pagination && dataSource.pagination.page || 1,
+                perPage: dataSource && dataSource.perPage || 10,
+                perPageOptions: (dataSource.pagination && dataSource.pagination.perPageOptions && dataSource.pagination.perPageOptions.length) ? 
+                    dataSource.pagination.perPageOptions : [ 10, 20, 30, 50, 100, 200, 300, 500, 1000 ],
                 total: 0,
                 totalPages: 0,
             },
+            useSelect: !!dataSource.select,
+            selectKeys: dataSource.select || [],
         }
     },
     async mounted() {
@@ -140,6 +153,8 @@ export default {
             this.expandColumnHeaderSettings(this.columnSettings)
             this.headerArray = Array.from(Array(this.headerDepth)).map(el => [])
             this.updateColumnHeaderArray(this.columnSettings)
+
+            console.log(this.headerArray)
         },
         expandColumnHeaderSettings(columns) {
             for (let i = 0; i < columns.length; i++) {
