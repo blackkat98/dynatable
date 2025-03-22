@@ -150,7 +150,7 @@ const mockApi = async (params) => {
                 data: list.slice(perPage * (page - 1), perPage * page),
                 meta: { page, perPage, total: list.length, totalPages: Math.ceil(list.length / perPage) },
             })
-        }, 3000)
+        }, 1500)
     })
 }
 const tbl3_Data = table3.getData()

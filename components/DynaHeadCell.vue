@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="config.type === 'select'">
+        <div v-if="config.prop === '__SELECTED__'">
             <b-form-checkbox 
                 v-model="checkbox.checked" 
                 :intermediate="checkbox.isIndeterminate" 

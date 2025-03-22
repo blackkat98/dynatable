@@ -90,6 +90,7 @@
 
 <script>
 import _ from 'lodash'
+
 import DynaHeadCell from './DynaHeadCell.vue'
 import DynaBodyCell from './DynaBodyCell.vue'
 import dottie from 'dottie'
@@ -118,7 +119,7 @@ export default {
 
         if (dataSource.select) {
             columns.unshift({
-                type: 'select',
+                prop: '__SELECTED__',
             })
         }
 
@@ -153,8 +154,6 @@ export default {
             this.expandColumnHeaderSettings(this.columnSettings)
             this.headerArray = Array.from(Array(this.headerDepth)).map(el => [])
             this.updateColumnHeaderArray(this.columnSettings)
-
-            console.log(this.headerArray)
         },
         expandColumnHeaderSettings(columns) {
             for (let i = 0; i < columns.length; i++) {
@@ -264,6 +263,8 @@ export default {
                     this.data = dataSet
                 }
             }
+
+            if (this.useSelect) this.data = this.data.map(el => ({ ...el, __SELECTED__: false }))
         },
         getHeaderCellClass(propSettings) {
             const result = []

@@ -4,20 +4,24 @@
             <span v-if="property.type === 'index'">
                 {{ pageSize * (pageNumber - 1) + rowIndex + 1 }}
             </span>
-            <span v-if="property.type === 'select'">
-                <b-form-checkbox>
-                    
-                </b-form-checkbox>
-            </span>
         </div>
         <div v-if="property.prop">
-            {{ dottie.get(rowData, property.prop) }}
+            <span v-if="property.prop === '__SELECTED__'">
+                <b-form-checkbox 
+                    v-model="rowData.__SELECTED__" 
+                    @change="onValueChange" 
+                />
+            </span>
+            <span v-else>
+                {{ dottie.get(rowData, property.prop) }}
+            </span>
         </div>
     </div>
 </template>
 
 <script>
 import dottie from 'dottie'
+import _ from 'lodash'
 
 export default {
     name: 'DynaBodyCell',
@@ -53,7 +57,21 @@ export default {
         }
     },
     methods: {
-        
+        onValueChange(value) {
+            const change = {
+                value,
+                property: {
+                    type: this.property.type,
+                    prop: this.property.prop,
+                }, 
+                rowIndex: this.rowIndex,
+                colIndex: this.colIndex,
+                pageNumber: this.pageNumber,
+                rowData: this.rowData,
+            }
+            this.$emit('row-data-change', change)
+            console.log(change)
+        },
     },
 }
 </script>
