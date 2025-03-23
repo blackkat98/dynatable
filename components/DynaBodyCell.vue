@@ -13,14 +13,13 @@
                 />
             </span>
             <span v-else>
-                {{ dottie.get(rowData, property.prop) }}
+                {{ lodash.get(rowData, property.prop) }}
             </span>
         </div>
     </div>
 </template>
 
 <script>
-import dottie from 'dottie'
 import _ from 'lodash'
 
 export default {
@@ -53,7 +52,7 @@ export default {
     },
     data() {
         return {
-            dottie,
+            lodash: _,
         }
     },
     methods: {
@@ -70,7 +69,6 @@ export default {
                 rowData: this.rowData,
             }
             this.$emit('row-data-change', change)
-            console.log(change)
         },
     },
 }

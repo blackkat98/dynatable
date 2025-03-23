@@ -25,7 +25,11 @@
                         :rowspan="headerCell.rowSpan || 1" 
                         :class="getHeaderCellClass(headerCell)" 
                     >
-                        <dyna-head-cell :config="headerCell" />
+                        <dyna-head-cell 
+                            ref="headCell" 
+                            :config="headerCell" 
+                            @header-checkbox-change="onHeaderCheckboxChange" 
+                        />
                     </b-th>
                 </b-tr>
             </b-thead>
@@ -39,12 +43,14 @@
                         :class="getBodyCellClass(prop)" 
                     >
                         <dyna-body-cell 
+                            ref="bodyCell" 
                             :property="prop" 
                             :rowIndex="dataLineIndex" 
                             :colIndex="propIndex" 
                             :pageNumber="pagination.page || 1" 
                             :pageSize="pagination.perPage || data.length" 
                             :rowData="dataLine" 
+                            @row-data-change="onRowDataChange" 
                         />
                     </b-td>
                 </b-tr>
@@ -93,7 +99,6 @@ import _ from 'lodash'
 
 import DynaHeadCell from './DynaHeadCell.vue'
 import DynaBodyCell from './DynaBodyCell.vue'
-import dottie from 'dottie'
 
 export default {
     name: 'DynaTable',
@@ -142,6 +147,7 @@ export default {
             },
             useSelect: !!dataSource.select,
             selectKeys: dataSource.select || [],
+            selectedRows: [],
         }
     },
     async mounted() {
@@ -222,9 +228,9 @@ export default {
 
                 for (const key of Object.keys(requestMap)) {
                     if (requestMap[key] === 'page') {
-                        dottie.set(request, key, this.pagination.page)
+                        _.set(request, key, this.pagination.page)
                     } else if ([ 'perPage', 'perpage', 'per_page' ].includes(requestMap[key])) {
-                        dottie.set(request, key, this.pagination.perPage)
+                        _.set(request, key, this.pagination.perPage)
                     }
 
                     // to do: more custom params
@@ -238,11 +244,11 @@ export default {
 
                     for (const key of Object.keys(responseMap)) {
                         if (responseMap[key] === 'data') {
-                            this.data = dottie.get(response, key)
+                            this.data = _.get(response, key)
                         } else if (responseMap[key] === 'total') {
-                            this.pagination.total = dottie.get(response, key)
+                            this.pagination.total = _.get(response, key)
                         } else if ([ 'totalPages', 'totalpages', 'total_pages' ].includes(responseMap[key])) {
-                            this.pagination.totalPages = dottie.get(response, key)
+                            this.pagination.totalPages = _.get(response, key)
                         }
                     }
 
@@ -312,10 +318,31 @@ export default {
             this.pagination.perPage = perPage
             await this.fetchData()
         },
+        onRowDataChange(change) {
+            if (change.property.prop === '__SELECTED__' && this.useSelect) {
+                const selectKeys = this.selectKeys.length ? 
+                    this.selectKeys : this.propList.map(el => el.prop).filter(el => el && el !== '__SELECTED__')
+                const isSameObject = (a, b, keys) => keys.every(k => _.get(a, k) === _.get(b, k))
+                const exOption = this.selectedRows.find(el => isSameObject(change.rowData, el, selectKeys))
+
+                if (change.value && !exOption) this.selectedRows.push(change.rowData)
+                if (!change.value && exOption) this.selectedRows = this.selectedRows.filter(el => !isSameObject(change.rowData, el, selectKeys))
+
+                this.$refs.headCell[0].setCheckbox(this.data.length, this.data.filter(el => el.__SELECTED__).length)
+            }
+        },
+        onHeaderCheckboxChange(value) {
+            if (!this.useSelect) return
+
+            this.data.forEach((el, index) => this.data[index].__SELECTED__ = value)
+        },
 
         // Expose table data
         getData() {
             return this.data
+        },
+        getSelectedData() {
+            return this.selectedRows.map(el => ({ ...el, __SELECTED__: undefined }))
         },
     },
 }

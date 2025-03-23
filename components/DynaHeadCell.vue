@@ -2,8 +2,9 @@
     <div>
         <div v-if="config.prop === '__SELECTED__'">
             <b-form-checkbox 
-                v-model="checkbox.checked" 
-                :intermediate="checkbox.isIndeterminate" 
+                v-model="checkbox.isChecked" 
+                :indeterminate="checkbox.isIndeterminate" 
+                @change="onCheckboxChange" 
             />
         </div>
         <div v-else>
@@ -24,13 +25,33 @@ export default {
     data() {
         return {
             checkbox: {
-                checked: false,
+                isChecked: false,
                 isIndeterminate: false,
             },
         }
     },
     methods: {
-        
+        setCheckbox(total, selected) {
+            switch (true) {
+                case !selected:
+                    this.checkbox.isChecked = false
+                    this.checkbox.isIndeterminate = false
+                    break
+
+                case selected < total:
+                    this.checkbox.isChecked = false
+                    this.checkbox.isIndeterminate = true
+                    break
+
+                case selected === total:
+                    this.checkbox.isChecked = true
+                    this.checkbox.isIndeterminate = false
+                    break
+            }
+        },
+        onCheckboxChange(value) {
+            this.$emit('header-checkbox-change', value)
+        },
     },
 }
 </script>

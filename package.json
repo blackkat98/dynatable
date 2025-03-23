@@ -8,18 +8,14 @@
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    
-  },
   "devDependencies": {
-    "sass": "^1.85.1",
-    "sass-embedded": "^1.85.1",
     "@vitejs/plugin-vue2": "^2.3.3",
     "bootstrap": "^5.3.3",
     "bootstrap-vue": "^2.23.1",
-    "dottie": "^2.0.6",
     "element-ui": "^2.15.14",
     "lodash": "^4.17.21",
+    "sass": "^1.85.1",
+    "sass-embedded": "^1.85.1",
     "vite": "^6.2.1",
     "vue": "^2.7.16"
   }
